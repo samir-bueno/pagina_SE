@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Control de Lámpara</title>
+  <script src="https://unpkg.com/paho-mqtt/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 80px;
+    }
+
+    button {
+      font-size: 24px;
+      padding: 20px 50px;
+      margin: 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .on {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .off {
+      background-color: #f44336;
+      color: white;
+    }
+
+    #estado {
+      margin-top: 30px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Control Remoto de Lámpara</h1>
+
+  <button class="on" onclick="encender()">ENCENDER</button>
+  <button class="off" onclick="apagar()">APAGAR</button>
+
+  <div id="estado">Conectando al broker...</div>
+
+  <script>
+    // Cambia esta IP y puerto si tu broker usa otro
+    const brokerIP = "10.9.120.181";
+    const brokerPort = 9001; // Asegurate que este puerto esté habilitado en el broker como WebSocket
+
+    const client = new Paho.MQTT.Client(brokerIP, brokerPort, "webclient-" + Math.random());
+
+    client.onConnectionLost = () => {
+      document.getElementById("estado").innerText = "Conexión perdida.";
+    };
+
+    client.onMessageArrived = (message) => {
+      console.log("Mensaje recibido:", message.payloadString);
+    };
+
+    client.connect({
+      onSuccess: () => {
+        document.getElementById("estado").innerText = "Conectado al broker.";
+        client.subscribe("lampara/estado");
+      },
+      onFailure: (err) => {
+        document.getElementById("estado").innerText = "Error al conectar con el broker.";
+        console.error(err);
+      }
+    });
+
+    function encender() {
+      const msg = new Paho.MQTT.Message("ON");
+      msg.destinationName = "lampara/estado";
+      client.send(msg);
+    }
+
+    function apagar() {
+      const msg = new Paho.MQTT.Message("OFF");
+      msg.destinationName = "lampara/estado";
+      client.send(msg);
+    }
+  </script>
+</body>
+</html>
